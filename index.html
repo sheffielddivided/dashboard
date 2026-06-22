@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Energi- og markedsdashbord</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2d3148;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #4f6ef7;
+      --header-h: 48px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    header {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      gap: 1rem;
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .logo svg { flex-shrink: 0; }
+
+    .sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ── Tab bar ─────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 0.15rem;
+      flex: 1;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab:hover { color: var(--text); background: rgba(79,110,247,0.08); }
+    .tab.active {
+      color: #fff;
+      background: rgba(79,110,247,0.18);
+      border-color: rgba(79,110,247,0.4);
+    }
+
+    .tab .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Layout mode toggle (right side of header) ───────── */
+    .layout-toggle {
+      display: flex;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+    .layout-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      padding: 0.28rem 0.5rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .layout-btn:hover { color: var(--text); border-color: var(--accent); }
+    .layout-btn.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+    /* ── Main grid ───────────────────────────────────────── */
+    #grid {
+      position: fixed;
+      inset: var(--header-h) 0 0 0;
+      display: grid;
+      gap: 3px;
+      background: #08090d;
+    }
+
+    /* Grid layouts */
+    #grid.layout-2x2 {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+    #grid.layout-1x4 {
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-rows: 1fr;
+    }
+    #grid.layout-focus {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    /* ── Panel ───────────────────────────────────────────── */
+    .panel {
+      position: relative;
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* In focus mode, only the active panel is visible */
+    #grid.layout-focus .panel { display: none; }
+    #grid.layout-focus .panel.focused { display: flex; }
+
+    .panel-label {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: rgba(15,17,23,0.85);
+      padding: 0.18rem 0.45rem;
+      border-radius: 4px;
+      z-index: 10;
+      pointer-events: none;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .panel-expand {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      z-index: 10;
+      background: rgba(15,17,23,0.75);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      padding: 0.18rem 0.42rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .panel:hover .panel-expand { opacity: 1; }
+    .panel-expand:hover { color: var(--text); border-color: var(--accent); }
+
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+      display: block;
+      /* Scale down content to fit smaller panels in 2×2 layout */
+      transform-origin: top left;
+    }
+
+    /* Panel loading overlay */
+    .panel-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      gap: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      z-index: 5;
+      transition: opacity 0.3s;
+    }
+    .panel-loading.done { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 26px; height: 26px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="22" height="22" rx="5" fill="#1e3a8a"/>
+      <rect x="3" y="11" width="4" height="7" rx="1" fill="#60a5fa"/>
+      <rect x="9" y="7" width="4" height="11" rx="1" fill="#3b82f6"/>
+      <rect x="15" y="4" width="4" height="14" rx="1" fill="#2563eb"/>
+    </svg>
+    Energi- og markedsdashbord
+  </div>
+
+  <div class="sep"></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-panel="eia" onclick="focusPanel('eia')">
+      <span class="dot" style="background:#f97316"></span> EIA – US energi
+    </button>
+    <button class="tab" data-panel="eugas" onclick="focusPanel('eugas')">
+      <span class="dot" style="background:#38bdf8"></span> EU-gasslager
+    </button>
+    <button class="tab" data-panel="nve" onclick="focusPanel('nve')">
+      <span class="dot" style="background:#22c55e"></span> NVE – Magasin
+    </button>
+    <button class="tab" data-panel="nb" onclick="focusPanel('nb')">
+      <span class="dot" style="background:#a78bfa"></span> Norges Bank
+    </button>
+  </nav>
+
+  <div class="layout-toggle">
+    <button class="layout-btn active" title="2×2 grid" onclick="setLayout('2x2', this)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="0" width="6" height="6" rx="1"/><rect x="8" y="0" width="6" height="6" rx="1"/>
+        <rect x="0" y="8" width="6" height="6" rx="1"/><rect x="8" y="8" width="6" height="6" rx="1"/>
+      </svg>
+    </button>
+    <button class="layout-btn" title="Side by side" onclick="setLayout('1x4', this)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="0" width="2.5" height="14" rx="1"/><rect x="3.83" y="0" width="2.5" height="14" rx="1"/>
+        <rect x="7.66" y="0" width="2.5" height="14" rx="1"/><rect x="11.5" y="0" width="2.5" height="14" rx="1"/>
+      </svg>
+    </button>
+    <button class="layout-btn" title="Fokus på valgt panel" onclick="setLayout('focus', this)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="0" width="14" height="14" rx="2"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div id="grid" class="layout-2x2">
+
+  <div class="panel" id="panel-eia">
+    <div class="panel-label">EIA – US energi</div>
+    <button class="panel-expand" onclick="focusPanel('eia');setLayout('focus',document.querySelectorAll('.layout-btn')[2])">⛶ Utvid</button>
+    <div class="panel-loading" id="loading-eia">
+      <div class="spinner"></div>
+      Laster EIA…
+    </div>
+    <iframe src="eia.html" title="EIA US Energy Data" onload="panelLoaded('eia')"></iframe>
+  </div>
+
+  <div class="panel" id="panel-eugas">
+    <div class="panel-label">EU-gasslager</div>
+    <button class="panel-expand" onclick="focusPanel('eugas');setLayout('focus',document.querySelectorAll('.layout-btn')[2])">⛶ Utvid</button>
+    <div class="panel-loading" id="loading-eugas">
+      <div class="spinner"></div>
+      Laster EU-gasslager…
+    </div>
+    <iframe src="eugas.html" title="Europeisk gasslager" onload="panelLoaded('eugas')"></iframe>
+  </div>
+
+  <div class="panel" id="panel-nve">
+    <div class="panel-label">NVE – Magasinstatistikk</div>
+    <button class="panel-expand" onclick="focusPanel('nve');setLayout('focus',document.querySelectorAll('.layout-btn')[2])">⛶ Utvid</button>
+    <div class="panel-loading" id="loading-nve">
+      <div class="spinner"></div>
+      Laster NVE…
+    </div>
+    <iframe src="nve.html" title="NVE Magasinstatistikk" onload="panelLoaded('nve')"></iframe>
+  </div>
+
+  <div class="panel" id="panel-nb">
+    <div class="panel-label">Norges Bank</div>
+    <button class="panel-expand" onclick="focusPanel('nb');setLayout('focus',document.querySelectorAll('.layout-btn')[2])">⛶ Utvid</button>
+    <div class="panel-loading" id="loading-nb">
+      <div class="spinner"></div>
+      Laster Norges Bank…
+    </div>
+    <iframe src="nb.html" title="Norges Bank" onload="panelLoaded('nb')"></iframe>
+  </div>
+
+</div>
+
+<script>
+let currentFocus = 'eia';
+let currentLayout = '2x2';
+
+function panelLoaded(id) {
+  const el = document.getElementById('loading-' + id);
+  if (el) el.classList.add('done');
+  scaleIframes();
+}
+
+function focusPanel(id) {
+  currentFocus = id;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.panel === id);
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('focused', p.id === 'panel-' + id);
+  });
+}
+
+function setLayout(layout, btn) {
+  currentLayout = layout;
+  document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const grid = document.getElementById('grid');
+  grid.className = 'layout-' + layout;
+  // Small delay to let grid repaint before scaling
+  requestAnimationFrame(() => scaleIframes());
+}
+
+function scaleIframes() {
+  if (currentLayout === '2x2') {
+    // Each panel is roughly half the viewport. Scale iframe content to fit.
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(panel => {
+      const iframe = panel.querySelector('iframe');
+      if (!iframe) return;
+      const pw = panel.clientWidth;
+      const ph = panel.clientHeight;
+      // Target a virtual viewport of 1200×900 for each sub-app
+      const scaleX = pw / 1200;
+      const scaleY = ph / 900;
+      const scale  = Math.min(scaleX, scaleY, 1);
+      iframe.style.transform = `scale(${scale})`;
+      iframe.style.width  = (pw / scale) + 'px';
+      iframe.style.height = (ph / scale) + 'px';
+    });
+  } else {
+    // 1x4 or focus: reset scaling
+    document.querySelectorAll('.panel iframe').forEach(iframe => {
+      iframe.style.transform = '';
+      iframe.style.width  = '';
+      iframe.style.height = '';
+    });
+  }
+}
+
+// Re-scale on resize
+window.addEventListener('resize', scaleIframes);
+
+// Initial scale
+window.addEventListener('DOMContentLoaded', () => {
+  requestAnimationFrame(scaleIframes);
+});
+</script>
+</body>
+</html>

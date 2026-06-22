@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EIA Data</title>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" href="apple-touch-icon.png" type="image/png" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 0.7rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .site-title { font-size: 0.95rem; font-weight: 600; color: #f1f5f9; }
+
+    .view-nav {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 0 2rem;
+      display: flex;
+    }
+    .view-nav button {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #64748b;
+      padding: 0.7rem 1.25rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      margin-bottom: -1px;
+    }
+    .view-nav button:hover { color: #cbd5e1; }
+    .view-nav button.active { color: #f1f5f9; border-bottom-color: #4f6ef7; font-weight: 600; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 2rem;
+      align-items: center;
+    }
+    .controls label { font-size: 0.82rem; color: #94a3b8; white-space: nowrap; }
+
+    select {
+      background: #1e2235;
+      border: 1px solid #2d3148;
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:hover { border-color: #4f6ef7; }
+
+    .toggle-group {
+      display: flex;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .toggle-group button {
+      background: #1e2235;
+      border: none;
+      color: #64748b;
+      padding: 0.4rem 0.95rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .toggle-group button:not(:last-child) { border-right: 1px solid #2d3148; }
+    .toggle-group button.active { background: #3b5bdb; color: #fff; font-weight: 600; }
+    .toggle-group button:not(.active):hover { background: '#252840'; color: #e2e8f0; }
+
+    .spacer { flex: 1; }
+
+    .chart-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-card h2 { font-size: 0.95rem; font-weight: 600; color: #cbd5e1; margin-bottom: 1rem; }
+    .chart-wrap { position: relative; height: 360px; }
+
+    .status { text-align: center; padding: 3rem 1rem; color: #475569; font-size: 0.9rem; }
+    .spinner {
+      display: inline-block;
+      width: 28px; height: 28px;
+      border: 3px solid #2d3148;
+      border-top-color: #4f6ef7;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      background: #2d1515;
+      border: 1px solid #7f1d1d;
+      color: #fca5a5;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .footnote { font-size: 0.72rem; color: #475569; margin-top: 0.6rem; text-align: right; }
+
+    .site-footer {
+      text-align: center;
+      padding: 1.5rem 2rem;
+      color: #475569;
+      font-size: 0.78rem;
+      border-top: 1px solid #1e2235;
+      margin-top: 0.5rem;
+    }
+    .site-footer a { color: #60a5fa; text-decoration: none; }
+    .site-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;flex-shrink:0">
+    <rect x="7" y="9" width="26" height="22" rx="4" fill="#1e3a8a"/>
+    <ellipse cx="20" cy="9" rx="13" ry="4.5" fill="#3b5bdb"/>
+    <ellipse cx="20" cy="31" rx="13" ry="4.5" fill="#3b5bdb"/>
+    <rect x="7" y="9" width="26" height="22" rx="4" fill="url(#bg)"/>
+    <line x1="7" y1="16.5" x2="33" y2="16.5" stroke="#60a5fa" stroke-width="1.8" opacity="0.7"/>
+    <line x1="7" y1="23.5" x2="33" y2="23.5" stroke="#60a5fa" stroke-width="1.8" opacity="0.7"/>
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#1e3a8a"/>
+        <stop offset="50%" stop-color="#2d4fc4"/>
+        <stop offset="100%" stop-color="#1e3a8a"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <span class="site-title">U.S. Energy Data from EIA</span>
+</header>
+
+<nav class="view-nav">
+  <button id="tabCrude"    class="active" onclick="setView('crude')">Crude</button>
+  <button id="tabProducts"               onclick="setView('products')">Products</button>
+  <button id="tabFlows"                  onclick="setView('flows')">Flows</button>
+  <button id="tabPrices"                 onclick="setView('prices')">Prices</button>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════ INVENTORY ══════════════════════════ -->
+  <div id="inventoryView">
+    <div class="controls">
+      <div class="toggle-group" id="seriesGrpCrude">
+        <button data-val="WCRSTUS1" onclick="activateBtn(this);loadData()">Incl. SPR</button>
+        <button data-val="WCESTUS1" class="active" onclick="activateBtn(this);loadData()">Excl. SPR</button>
+        <button data-val="WCSSTUS1" onclick="selectSPR(this)">SPR only</button>
+      </div>
+      <div class="toggle-group" id="seriesGrpProducts" style="display:none">
+        <button data-val="WGRSTUS1" class="active" onclick="activateBtn(this);loadData()">Gasoline</button>
+        <button data-val="WDISTUS1" onclick="activateBtn(this);loadData()">Distillate</button>
+        <button data-val="WKJSTUS1" onclick="activateBtn(this);loadData()">Jet Fuel</button>
+      </div>
+
+      <div class="toggle-group" id="yearsGrp">
+        <button data-val="3"  class="active" onclick="activateBtn(this);loadData()">3y</button>
+        <button data-val="5"  onclick="activateBtn(this);loadData()">5y</button>
+        <button data-val="10" onclick="activateBtn(this);loadData()">10y</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="toggle-group">
+        <button id="btnSeasonal" class="active" onclick="setMode('seasonal')">Seasonal</button>
+        <button id="btnHistoric"               onclick="setMode('historic')">Historical</button>
+      </div>
+    </div>
+
+    <div id="invErrorBox" style="display:none"></div>
+
+    <div class="chart-card">
+      <h2 id="chartTitle">Loading…</h2>
+      <div class="chart-wrap">
+        <div class="status" id="loadingMsg"><div class="spinner"></div><br>Fetching data from EIA…</div>
+        <canvas id="mainChart" style="display:none"></canvas>
+      </div>
+      <div class="footnote" id="footerMain"></div>
+    </div>
+
+    <div class="chart-card">
+      <h2>Week-over-week change — current year</h2>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="deltaChart" style="display:none"></canvas>
+      </div>
+      <div class="footnote" id="footerDelta"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ FLOWS ══════════════════════════ -->
+  <div id="flowsView" style="display:none">
+    <div class="controls">
+      <div class="toggle-group" id="flowProductGrp">
+        <button data-val="crude"      class="active" onclick="activateBtn(this);loadFlows()">Crude</button>
+        <button data-val="gasoline"   onclick="activateBtn(this);loadFlows()">Gasoline</button>
+        <button data-val="distillate" onclick="activateBtn(this);loadFlows()">Distillate</button>
+        <button data-val="jetfuel"    onclick="activateBtn(this);loadFlows()">Jet Fuel</button>
+        <button data-val="lng"        onclick="activateBtn(this);loadFlows()">LNG</button>
+      </div>
+
+      <div class="toggle-group" id="flowPeriodGrp">
+        <button data-val="52"   onclick="activateBtn(this);loadFlows()">1y</button>
+        <button data-val="104"  class="active" onclick="activateBtn(this);loadFlows()">2y</button>
+        <button data-val="260"  onclick="activateBtn(this);loadFlows()">5y</button>
+        <button data-val="520"  onclick="activateBtn(this);loadFlows()">10y</button>
+        <button data-val="1040" onclick="activateBtn(this);loadFlows()">20y</button>
+      </div>
+    </div>
+
+    <div id="flowErrorBox" style="display:none"></div>
+
+    <div class="chart-card">
+      <h2 id="flowChartTitle">Loading…</h2>
+      <div class="chart-wrap">
+        <div class="status" id="flowLoadingMsg"><div class="spinner"></div><br>Fetching data from EIA…</div>
+        <canvas id="flowChart" style="display:none"></canvas>
+      </div>
+      <div class="footnote" id="footerFlow"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ PRICES ══════════════════════════ -->
+  <div id="pricesView" style="display:none">
+    <div class="controls">
+      <div class="toggle-group" id="priceGroupGrp">
+        <button data-val="crude"  class="active" onclick="activateBtn(this);loadPrices()">Oil</button>
+        <button data-val="fuel"   onclick="activateBtn(this);loadPrices()">Products</button>
+        <button data-val="natgas" onclick="activateBtn(this);loadPrices()">Natural Gas</button>
+        <button data-val="lng"    onclick="activateBtn(this);loadPrices()">LNG</button>
+      </div>
+
+      <div class="toggle-group" id="pricePeriodGrp">
+        <button data-val="52"   onclick="activateBtn(this);loadPrices()">1y</button>
+        <button data-val="104"  class="active" onclick="activateBtn(this);loadPrices()">2y</button>
+        <button data-val="260"  onclick="activateBtn(this);loadPrices()">5y</button>
+        <button data-val="520"  onclick="activateBtn(this);loadPrices()">10y</button>
+        <button data-val="1040" onclick="activateBtn(this);loadPrices()">20y</button>
+      </div>
+    </div>
+
+    <div id="priceErrorBox" style="display:none"></div>
+
+    <div class="chart-card">
+      <h2 id="priceChartTitle">Loading…</h2>
+      <div class="chart-wrap">
+        <div class="status" id="priceLoadingMsg"><div class="spinner"></div><br>Fetching data from EIA…</div>
+        <canvas id="priceChart" style="display:none"></canvas>
+      </div>
+      <div class="footnote" id="footerPrice"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  Data: <a href="https://www.eia.gov" target="_blank" rel="noopener noreferrer">U.S. Energy Information Administration (EIA)</a>
+</footer>
+
+<script>
+const API_KEY = 'dmZglvmWG86ewOel1qYABoroVEnhGjUNTiHU4Rki';
+
+// ── Cache (in-memory, 30-min TTL) ─────────────────────────────────────────────
+
+const _cache = new Map();
+const CACHE_TTL = 30 * 60 * 1000;
+
+async function apiFetch(url) {
+  const hit = _cache.get(url);
+  if (hit && Date.now() - hit.ts < CACHE_TTL) return hit.json;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    let detail = '';
+    try { const j = await resp.json(); detail = ': ' + (j?.error ?? j?.['error-message'] ?? JSON.stringify(j)); } catch {}
+    throw new Error(`HTTP ${resp.status}${detail}`);
+  }
+  const json = await resp.json();
+  _cache.set(url, { json, ts: Date.now() });
+  return json;
+}
+
+function eiaUrl(route, params) {
+  const p = new URLSearchParams({
+    api_key: API_KEY, 'data[0]': 'value',
+    'sort[0][column]': 'period', 'sort[0][direction]': 'desc',
+    length: 5000, offset: 0,
+  });
+  for (const [key, val] of Object.entries(params)) {
+    if (Array.isArray(val)) val.forEach(v => p.append(key, v));
+    else p.set(key, val);
+  }
+  return `https://api.eia.gov/v2/${route}/data/?${p}`;
+}
+
+function dateRange(weeks) {
+  const toISO = d => d.toISOString().slice(0, 10);
+  const end   = new Date();
+  const start = new Date(); start.setDate(start.getDate() - weeks * 7);
+  return { start: toISO(start), end: toISO(end) };
+}
+
+// ── Inventory config ──────────────────────────────────────────────────────────
+
+const SERIES_LABELS = {
+  WCRSTUS1: 'Crude Oil Stocks (incl. SPR)',
+  WCESTUS1: 'Crude Oil Stocks (excl. SPR)',
+  WCSSTUS1: 'Strategic Petroleum Reserve (SPR)',
+  WGRSTUS1: 'Total Gasoline Stocks',
+  WDISTUS1: 'Distillate Stocks',
+  WKJSTUS1: 'Jet Fuel Stocks',
+};
+
+
+// ── Flows config ──────────────────────────────────────────────────────────────
+
+const FLOW_PRODUCTS = {
+  crude: {
+    label: 'Crude Oil', endpoint: 'petroleum/sum/sndw', unit: 'thousand bbl/day',
+    series: [
+      { id: 'WCRFPUS2', label: 'Production',    color: '#22c55e', dash: [] },
+      { id: 'WCRIMUS2', label: 'Imports',        color: '#38bdf8', dash: [] },
+      { id: 'WCREXUS2', label: 'Exports',        color: '#f97316', dash: [] },
+      { id: 'WCRRIUS2', label: 'Refinery Input', color: '#e879f9', dash: [5,3] },
+    ],
+  },
+  gasoline: {
+    label: 'Gasoline', endpoint: 'petroleum/sum/sndw', unit: 'thousand bbl/day',
+    series: [
+      { id: 'WGFRPUS2', label: 'Production',      color: '#22c55e', dash: [] },
+      { id: 'WGFIMUS2', label: 'Imports',          color: '#38bdf8', dash: [] },
+      { id: 'WGFEXUS2', label: 'Exports',          color: '#f97316', dash: [] },
+      { id: 'WGFUPUS2', label: 'Product Supplied', color: '#e879f9', dash: [5,3] },
+    ],
+  },
+  distillate: {
+    label: 'Distillate', endpoint: 'petroleum/sum/sndw', unit: 'thousand bbl/day',
+    series: [
+      { id: 'WDIRPUS2', label: 'Production',      color: '#22c55e', dash: [] },
+      { id: 'WDIIMUS2', label: 'Imports',          color: '#38bdf8', dash: [] },
+      { id: 'WDIEXUS2', label: 'Exports',          color: '#f97316', dash: [] },
+      { id: 'WDIUPUS2', label: 'Product Supplied', color: '#e879f9', dash: [5,3] },
+    ],
+  },
+  jetfuel: {
+    label: 'Jet Fuel', endpoint: 'petroleum/sum/sndw', unit: 'thousand bbl/day',
+    series: [
+      { id: 'WKJRPUS2', label: 'Production',      color: '#22c55e', dash: [] },
+      { id: 'WKJIMUS2', label: 'Imports',          color: '#38bdf8', dash: [] },
+      { id: 'WKJEXUS2', label: 'Exports',          color: '#f97316', dash: [] },
+      { id: 'WKJUPUS2', label: 'Product Supplied', color: '#e879f9', dash: [5,3] },
+    ],
+  },
+  lng: {
+    label: 'LNG Exports', unit: 'MMcf', lngMode: true,
+    series: [
+      { id: 'LNG_EXPORTS', label: 'Total LNG Exports', color: '#f97316', dash: [] },
+    ],
+  },
+};
+
+// ── Prices config ─────────────────────────────────────────────────────────────
+
+const PRICE_GROUPS = {
+  crude: {
+    title: 'Crude Oil Spot Prices',
+    unit: '$/bbl',
+    series: [
+      { id: 'RWTC',  label: 'WTI',   endpoint: 'petroleum/pri/spt', color: '#fb923c', freq: 'weekly' },
+      { id: 'RBRTE', label: 'Brent', endpoint: 'petroleum/pri/spt', color: '#38bdf8', freq: 'weekly' },
+    ],
+  },
+  fuel: {
+    title: 'Retail Fuel Prices',
+    unit: '$/gallon',
+    series: [
+      { id: 'EMM_EPM0_PTE_NUS_DPG',  label: 'Regular Gasoline', endpoint: 'petroleum/pri/gnd', color: '#22c55e', freq: 'weekly' },
+      { id: 'EMD_EPD2D_PTE_NUS_DPG', label: 'Diesel',           endpoint: 'petroleum/pri/gnd', color: '#38bdf8', freq: 'weekly' },
+    ],
+  },
+  natgas: {
+    title: 'U.S. Natural Gas — Domestic Price',
+    unit: '$/MMBtu',
+    series: [
+      { label: 'U.S. Natural Gas (domestic)', endpoint: 'natural-gas/pri/fut', color: '#a78bfa', freq: 'weekly',
+        facets: { 'facets[series][]': 'RNGWHHD', 'facets[process][]': 'PS0' } },
+    ],
+  },
+  lng: {
+    title: 'LNG Export Price',
+    unit: '$/MMBtu',
+    series: [
+      { label: 'LNG Export Price', endpoint: 'natural-gas/move/expc', color: '#f97316', freq: 'monthly',
+        facets: { 'facets[process][]': 'PNG' }, sumByPeriod: true },
+    ],
+  },
+};
+
+// ── Chart state ───────────────────────────────────────────────────────────────
+
+let mainChart   = null;
+let deltaChart  = null;
+let flowChart   = null;
+let priceChart  = null;
+let cachedData  = null;
+let chartMode   = 'seasonal';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmtN(n, dec = 0) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function fmt(n) { return fmtN(n, 1); }
+function sign(n) { return n >= 0 ? '+' : ''; }
+
+function convertArr(arr) {
+  return arr.map(v => v == null ? null : v / 1000);
+}
+
+function weekOfYear(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return Math.floor((date - new Date(y, 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+}
+
+const XSCALE  = { ticks: { color: '#94a3b8', maxTicksLimit: 13, font: { size: 11 } }, grid: { color: '#1e2235' } };
+const YSCALE  = { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: '#1e2235' } };
+const LEGEND  = { labels: { color: '#94a3b8', font: { size: 12 } } };
+const BASE_OPT = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } };
+
+// ── View switching ────────────────────────────────────────────────────────────
+
+function setView(view) {
+  const isCrude    = view === 'crude';
+  const isProducts = view === 'products';
+  const isInv      = isCrude || isProducts;
+  document.getElementById('tabCrude').classList.toggle('active', isCrude);
+  document.getElementById('tabProducts').classList.toggle('active', isProducts);
+  document.getElementById('tabFlows').classList.toggle('active', view === 'flows');
+  document.getElementById('tabPrices').classList.toggle('active', view === 'prices');
+  document.getElementById('inventoryView').style.display = isInv        ? '' : 'none';
+  document.getElementById('flowsView').style.display     = view === 'flows'  ? '' : 'none';
+  document.getElementById('pricesView').style.display    = view === 'prices' ? '' : 'none';
+  document.getElementById('seriesGrpCrude').style.display    = isCrude    ? '' : 'none';
+  document.getElementById('seriesGrpProducts').style.display = isProducts ? '' : 'none';
+  if (view === 'flows'  && !flowChart)  loadFlows();
+  if (view === 'prices' && !priceChart) loadPrices();
+  if (isInv) loadData();
+}
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
+
+function setMode(mode) {
+  chartMode = mode;
+  document.getElementById('btnSeasonal').classList.toggle('active', mode === 'seasonal');
+  document.getElementById('btnHistoric').classList.toggle('active', mode === 'historic');
+  if (cachedData) renderAll();
+}
+
+function activateBtn(btn) {
+  btn.closest('.toggle-group').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function getActiveVal(id) {
+  return document.querySelector('#' + id + ' button.active').dataset.val;
+}
+function getActiveSeries() {
+  const grp = document.getElementById('seriesGrpCrude').style.display !== 'none'
+    ? 'seriesGrpCrude' : 'seriesGrpProducts';
+  return getActiveVal(grp);
+}
+
+function selectSPR(btn) {
+  activateBtn(btn);
+  document.querySelectorAll('#yearsGrp button').forEach(b => b.classList.toggle('active', b.dataset.val === '10'));
+  chartMode = 'historic';
+  document.getElementById('btnSeasonal').classList.remove('active');
+  document.getElementById('btnHistoric').classList.add('active');
+  loadData();
+}
+
+
+async function loadData() {
+  const series    = getActiveSeries();
+  const yearsBack = parseInt(getActiveVal('yearsGrp'), 10);
+  hideErr('inv');
+  showLoading('inv', true);
+  try {
+    const { start, end } = dateRange((yearsBack + 2) * 52);
+    const url  = eiaUrl('petroleum/stoc/wstk', { frequency: 'weekly', 'facets[series][]': series, start, end });
+    const json = await apiFetch(url);
+    const raw  = json?.response?.data;
+    if (!raw?.length) throw new Error('No data returned from EIA.');
+    // EIA returns WGRSTUS1 in million bbl; all other stock series in thousand bbl.
+    // Multiply WGRSTUS1 by 1000 to normalise to thousand bbl so /1000 in rendering is consistent.
+    const scale = series === 'WGRSTUS1' ? 10000 : 1;
+    cachedData = raw
+      .map(d => ({ date: d.period, value: parseFloat(d.value) * scale }))
+      .filter(d => !isNaN(d.value))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    renderAll();
+    showLoading('inv', false);
+  } catch (e) { showErr('inv', e.message); showLoading('inv', false); }
+}
+
+function renderAll() {
+  const series    = getActiveSeries();
+  const yearsBack = parseInt(getActiveVal('yearsGrp'), 10);
+  const label     = SERIES_LABELS[series] || series;
+  const s         = buildSeasonalData(cachedData, yearsBack);
+  const lastDate  = s.currentYearArr.at(-1)?.date ?? cachedData.at(-1)?.date ?? '';
+  const note      = `Last updated: ${lastDate} · Source: U.S. EIA`;
+  document.getElementById('footerMain').textContent  = note;
+  document.getElementById('footerDelta').textContent = note;
+  renderDeltaChart(s.currentYearArr);
+  if (chartMode === 'seasonal') renderSeasonalChart(s, label);
+  else renderHistoricChart(cachedData, label, yearsBack);
+}
+
+function buildSeasonalData(data, yearsBack) {
+  const cy = new Date().getFullYear();
+  const byYW = {};
+  for (const d of data) {
+    const y = parseInt(d.date.slice(0, 4)), wi = weekOfYear(d.date);
+    if (wi < 0 || wi > 51) continue;
+    if (!byYW[y]) byYW[y] = {};
+    byYW[y][wi] = d.value;
+  }
+  const prev = [];
+  for (let y = cy - 1; y >= cy - yearsBack; y--) if (byYW[y]) prev.push(y);
+  const minB = [], maxB = [], avgB = [];
+  for (let w = 0; w < 52; w++) {
+    const vals = prev.map(y => byYW[y]?.[w]).filter(v => v != null);
+    if (!vals.length) { minB.push(null); maxB.push(null); avgB.push(null); }
+    else {
+      minB.push(Math.min(...vals));
+      maxB.push(Math.max(...vals));
+      avgB.push(vals.reduce((s, v) => s + v, 0) / vals.length);
+    }
+  }
+  const currentLine = Array.from({ length: 52 }, (_, w) => byYW[cy]?.[w] ?? null);
+  const xLabels     = Array.from({ length: 52 }, (_, w) => {
+    const d = new Date(cy, 0, 1 + w * 7);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  const currentYearArr = data.filter(d => d.date.startsWith(String(cy))).sort((a, b) => a.date.localeCompare(b.date));
+  return { currentLine, minBand: minB, maxBand: maxB, avgBand: avgB, xLabels, currentYear: cy, prevYears: prev, currentYearArr };
+}
+
+function renderSeasonalChart(s, label) {
+  const canvas = document.getElementById('mainChart');
+  canvas.style.display = 'block';
+  const yFrom = s.prevYears.at(-1) ?? '', yTo = s.prevYears[0] ?? '';
+  document.getElementById('chartTitle').textContent =
+    `${label} (million bbl) — ${s.currentYear} vs. historical band (${yFrom}–${yTo})`;
+  if (mainChart) mainChart.destroy();
+  mainChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: s.xLabels,
+      datasets: [
+        { label: `Max ${yFrom}–${yTo}`, data: convertArr(s.maxBand), borderColor: 'rgba(148,163,184,0.4)', backgroundColor: 'rgba(100,116,139,0.18)', borderWidth: 1, fill: '+1', pointRadius: 0, tension: 0.4, order: 2 },
+        { label: `Min ${yFrom}–${yTo}`, data: convertArr(s.minBand), borderColor: 'rgba(148,163,184,0.4)', backgroundColor: 'transparent', borderWidth: 1, fill: false, pointRadius: 0, tension: 0.4, order: 2 },
+        { label: String(s.currentYear), data: convertArr(s.currentLine), borderColor: '#f97316', backgroundColor: 'transparent', borderWidth: 2.5, fill: false, pointRadius: 3, pointHoverRadius: 6, tension: 0.3, spanGaps: false, order: 1 },
+      ],
+    },
+    options: { ...BASE_OPT, plugins: { legend: { ...LEGEND, labels: { ...LEGEND.labels, filter: i => i.datasetIndex !== 1 } }, tooltip: { callbacks: { label: ctx => ctx.parsed.y == null ? null : ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)} million bbl` } } }, scales: { x: XSCALE, y: { ...YSCALE, ticks: { ...YSCALE.ticks, callback: v => fmtN(v, 0) } } } },
+  });
+}
+
+function renderHistoricChart(data, label, yearsBack) {
+  const canvas  = document.getElementById('mainChart');
+  canvas.style.display = 'block';
+  const cutoff  = new Date(); cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+  const visible = data.filter(d => d.date >= cutoff.toISOString().slice(0, 10));
+  document.getElementById('chartTitle').textContent = `${label} (million bbl) — last ${yearsBack} years`;
+  if (mainChart) mainChart.destroy();
+  mainChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels: visible.map(d => d.date), datasets: [{ label, data: visible.map(d => d.value / 1000), borderColor: '#4f6ef7', backgroundColor: 'rgba(79,110,247,0.1)', fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2 }] },
+    options: { ...BASE_OPT, plugins: { legend: LEGEND, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)} million bbl` } } }, scales: { x: XSCALE, y: { ...YSCALE, ticks: { ...YSCALE.ticks, callback: v => fmtN(v, 0) } } } },
+  });
+}
+
+function renderDeltaChart(data) {
+  const canvas = document.getElementById('deltaChart');
+  canvas.style.display = 'block';
+  if (deltaChart) deltaChart.destroy();
+  const labels = [], deltas = [], colors = [];
+  for (let i = 1; i < data.length; i++) {
+    const raw = data[i].value - data[i - 1].value;
+    const d   = raw / 1000;
+    labels.push(data[i].date); deltas.push(d);
+    colors.push(d >= 0 ? 'rgba(74,222,128,0.75)' : 'rgba(248,113,113,0.75)');
+  }
+  deltaChart = new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: deltas, backgroundColor: colors, borderWidth: 0 }] },
+    options: { ...BASE_OPT, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${sign(ctx.parsed.y)}${fmt(ctx.parsed.y)} million bbl` } } }, scales: { x: { ...XSCALE, ticks: { ...XSCALE.ticks, maxTicksLimit: 14 }, grid: { display: false } }, y: { ...YSCALE, ticks: { ...YSCALE.ticks, callback: v => fmtN(v, 0) } } } },
+  });
+}
+
+// ── Flows ─────────────────────────────────────────────────────────────────────
+
+async function loadFlows() {
+  const productKey = getActiveVal('flowProductGrp');
+  const weeks      = parseInt(getActiveVal('flowPeriodGrp'), 10);
+  const product    = FLOW_PRODUCTS[productKey];
+  hideErr('flow'); showLoading('flow', true);
+  try {
+    const byId = product.lngMode
+      ? await fetchLng(weeks)
+      : await fetchPetroleumFlows(product, weeks);
+    renderFlowsChart(byId, product);
+    showLoading('flow', false);
+  } catch (e) { showErr('flow', e.message); showLoading('flow', false); }
+}
+
+async function fetchPetroleumFlows(product, weeks) {
+  const { start, end } = dateRange(weeks);
+  const params = { frequency: 'weekly', start, end };
+  const urlParams = new URLSearchParams({ api_key: API_KEY, 'data[0]': 'value', 'sort[0][column]': 'period', 'sort[0][direction]': 'desc', length: 5000, offset: 0, frequency: 'weekly', start, end });
+  product.series.forEach(s => urlParams.append('facets[series][]', s.id));
+  const url  = `https://api.eia.gov/v2/${product.endpoint}/data/?${urlParams}`;
+  const json = await apiFetch(url);
+  const raw  = json?.response?.data;
+  if (!raw?.length) throw new Error('No flow data returned from EIA.');
+  const byId = {};
+  for (const row of raw) {
+    const v = parseFloat(row.value);
+    if (isNaN(v)) continue;
+    if (!byId[row.series]) byId[row.series] = [];
+    byId[row.series].push({ date: row.period, value: v });
+  }
+  for (const id of Object.keys(byId)) byId[id].sort((a, b) => a.date.localeCompare(b.date));
+  return byId;
+}
+
+async function fetchLng(weeks) {
+  const months  = Math.max(12, Math.round(weeks * 12 / 52));
+  const cutoff  = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+  const cutoffStr = cutoff.toISOString().slice(0, 7); // YYYY-MM
+
+  const urlParams = new URLSearchParams({
+    api_key: API_KEY, 'data[0]': 'value', frequency: 'monthly',
+    start: cutoffStr,
+    'sort[0][column]': 'period', 'sort[0][direction]': 'desc', length: 5000, offset: 0,
+    'facets[process][]': 'ENG',
+  });
+  const url  = `https://api.eia.gov/v2/natural-gas/move/expc/data/?${urlParams}`;
+  const json = await apiFetch(url);
+  const raw  = json?.response?.data;
+  if (!raw?.length) throw new Error('No LNG data returned from EIA.');
+
+  // Aggregate rows by period (sum across all export terminals)
+  const byPeriod = {};
+  for (const row of raw) {
+    if (row.period < cutoffStr) continue;
+    const v = parseFloat(row.value);
+    if (isNaN(v)) continue;
+    byPeriod[row.period] = (byPeriod[row.period] ?? 0) + v;
+  }
+  if (!Object.keys(byPeriod).length) throw new Error('No LNG data in requested date range.');
+  const byId = {
+    LNG_EXPORTS: Object.entries(byPeriod).map(([date, value]) => ({ date, value })).sort((a, b) => a.date.localeCompare(b.date)),
+  };
+  return byId;
+}
+
+function renderFlowsChart(byId, product) {
+  const canvas = document.getElementById('flowChart');
+  canvas.style.display = 'block';
+  const dateSet = new Set();
+  for (const arr of Object.values(byId)) arr.forEach(d => dateSet.add(d.date));
+  const dates = [...dateSet].sort();
+  if (!dates.length) throw new Error('No data points to display.');
+  document.getElementById('flowChartTitle').textContent = `${product.label} — Flows (${product.unit})`;
+  document.getElementById('footerFlow').textContent = `Last updated: ${dates.at(-1)} · Source: U.S. EIA`;
+  const datasets = product.series.filter(s => byId[s.id]?.length).map(s => {
+    const lookup = Object.fromEntries(byId[s.id].map(d => [d.date, d.value]));
+    return { label: s.label, data: dates.map(d => lookup[d] ?? null), borderColor: s.color, backgroundColor: 'transparent', borderWidth: 2, borderDash: s.dash, pointRadius: dates.length > 150 ? 0 : 2, pointHoverRadius: 5, tension: 0.3, spanGaps: false };
+  });
+  if (!datasets.length) throw new Error('None of the expected series found in the API response.');
+  if (flowChart) flowChart.destroy();
+  flowChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels: dates, datasets },
+    options: { ...BASE_OPT, plugins: { legend: LEGEND, tooltip: { callbacks: { label: ctx => ctx.parsed.y == null ? null : ` ${ctx.dataset.label}: ${fmtN(ctx.parsed.y, 0)} ${product.unit}` } } }, scales: { x: XSCALE, y: { ...YSCALE, ticks: { ...YSCALE.ticks, callback: v => fmtN(v, 0) } } } },
+  });
+}
+
+// ── Prices ────────────────────────────────────────────────────────────────────
+
+async function loadPrices() {
+  const groupKey = getActiveVal('priceGroupGrp');
+  const weeks    = parseInt(getActiveVal('pricePeriodGrp'), 10);
+  const group    = PRICE_GROUPS[groupKey];
+  hideErr('price'); showLoading('price', true);
+  try {
+    const { start, end } = dateRange(weeks);
+    const startMon = start.slice(0, 7);
+    const endMon   = end.slice(0, 7);
+    const results = await Promise.all(group.series.map(async s => {
+      const isMonthly   = s.freq === 'monthly';
+      const facetParams = s.facets !== undefined ? s.facets : { 'facets[series][]': s.id };
+      const url  = eiaUrl(s.endpoint, { frequency: s.freq, ...facetParams,
+        start: isMonthly ? startMon : start, end: isMonthly ? endMon : end });
+      const json = await apiFetch(url);
+      let raw;
+      if (s.sumByPeriod) {
+        const today = new Date().toISOString().slice(0, 7);
+        const byPeriod = {};
+        for (const d of (json?.response?.data ?? [])) {
+          const v = parseFloat(d.value);
+          if (isNaN(v) || d.period > today) continue;
+          byPeriod[d.period] = (byPeriod[d.period] ?? 0) + v;
+        }
+        raw = Object.entries(byPeriod).map(([date, value]) => ({ date, value })).sort((a, b) => a.date.localeCompare(b.date));
+      } else {
+        const today = new Date().toISOString().slice(0, 10);
+        raw = (json?.response?.data ?? [])
+          .filter(d => !s.id || !d.series || d.series === s.id)
+          .map(d => ({ date: d.period, value: parseFloat(d.value) }))
+          .filter(d => !isNaN(d.value) && d.date <= today)
+          .sort((a, b) => a.date.localeCompare(b.date));
+      }
+      return { series: s, data: raw };
+    }));
+    renderPricesChart(results, group);
+    showLoading('price', false);
+  } catch (e) { showErr('price', e.message); showLoading('price', false); }
+}
+
+function renderPricesChart(results, group) {
+  const canvas = document.getElementById('priceChart');
+  canvas.style.display = 'block';
+  // Union of dates
+  const dateSet = new Set();
+  results.forEach(r => r.data.forEach(d => dateSet.add(d.date)));
+  const dates = [...dateSet].sort();
+  if (!dates.length) throw new Error('No price data to display.');
+  const lastDate = dates.at(-1);
+  document.getElementById('priceChartTitle').textContent = `${group.title} (${group.unit})`;
+  document.getElementById('footerPrice').textContent = `Last updated: ${lastDate} · Source: U.S. EIA`;
+  const datasets = results.filter(r => r.data.length).map(r => {
+    const lookup = Object.fromEntries(r.data.map(d => [d.date, d.value]));
+    return { label: r.series.label, data: dates.map(d => lookup[d] ?? null), borderColor: r.series.color, backgroundColor: 'transparent', borderWidth: 2, pointRadius: dates.length > 150 ? 0 : 2, pointHoverRadius: 5, tension: 0.3, spanGaps: false };
+  });
+  if (!datasets.length) throw new Error('No price series available for this group.');
+  if (priceChart) priceChart.destroy();
+  priceChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels: dates, datasets },
+    options: { ...BASE_OPT, plugins: { legend: LEGEND, tooltip: { callbacks: { label: ctx => ctx.parsed.y == null ? null : ` ${ctx.dataset.label}: ${fmtN(ctx.parsed.y, 2)} ${group.unit}` } } }, scales: { x: XSCALE, y: { ...YSCALE, ticks: { ...YSCALE.ticks, callback: v => fmtN(v, 2) } } } },
+  });
+}
+
+// ── Loading / error ───────────────────────────────────────────────────────────
+
+function showLoading(view, on) {
+  const ids = { inv: ['loadingMsg', 'mainChart', 'deltaChart'], flow: ['flowLoadingMsg', 'flowChart'], price: ['priceLoadingMsg', 'priceChart'] };
+  const [spinner, ...canvases] = ids[view];
+  document.getElementById(spinner).style.display = on ? 'block' : 'none';
+  if (on) canvases.forEach(id => { document.getElementById(id).style.display = 'none'; });
+}
+
+function showErr(view, msg) {
+  const el = document.getElementById(`${view}ErrorBox`);
+  el.className = 'error-box'; el.textContent = `Error: ${msg}`; el.style.display = 'block';
+}
+
+function hideErr(view) { document.getElementById(`${view}ErrorBox`).style.display = 'none'; }
+
+window.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
