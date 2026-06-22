@@ -2434,7 +2434,7 @@ function renderUmmTable(umms) {
 
 const API          = 'https://biapi.nve.no/magasinstatistikk/api/Magasinstatistikk/HentOffentligData';
 const CURRENT_YEAR = new Date().getFullYear();
-const NVE_NVE_HIST_YEARS = 20;
+const NVE_HIST_YEARS = 20;
 
 const REGIONS = [
   { key: 'NO1',  label: 'NO1',   name: 'NO1 – Østlandet',  match: d => d.omrType === 'EL' && d.omrnr === 1 },
