@@ -3128,8 +3128,8 @@ function makeRateChart(ctx, labels, values, color, gradColor) {
     options: { responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(26,32,53,0.92)', titleColor: '#f0f4f8', bodyColor: '#e2e8f0', borderColor: '#3b4a6b', borderWidth: 1, padding: 10, displayColors: false, callbacks: { label: function(c) { return c.parsed.y.toFixed(2) + '%'; } } } },
       scales: {
-        x: { ticks: { color: '#64748b', maxTicksLimit: 7, maxRotation: 0, font: { size: 11 } }, grid: { color: 'rgba(221,227,237,0.9)' } },
-        y: { suggestedMin: 0, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(1) + '%'; } }, grid: { color: 'rgba(221,227,237,0.9)' } }
+        x: { ticks: { color: '#64748b', maxTicksLimit: 7, maxRotation: 0, font: { size: 11 } }, grid: { color: '#1e2235' } },
+        y: { suggestedMin: 0, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(1) + '%'; } }, grid: { color: '#1e2235' } }
       }
     }
   });
@@ -3213,7 +3213,7 @@ async function loadHistorical(cur, days) {
       type: 'line', data: { labels: dates, datasets: [{ data: values, borderColor: lineColor, backgroundColor: gradient, fill: true, tension: 0.3, pointRadius: 0, pointHitRadius: 10, borderWidth: 2 }] },
       options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' },
         plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(26,32,53,0.92)', titleColor: '#f0f4f8', bodyColor: '#e2e8f0', borderColor: '#3b4a6b', borderWidth: 1, padding: 10, displayColors: false, callbacks: { label: function(c) { return cur + '/NOK: ' + c.parsed.y.toFixed(4); } } } },
-        scales: { x: { display: true, ticks: { color: '#64748b', maxTicksLimit: 6, maxRotation: 0, font: { size: 11 } }, grid: { color: 'rgba(221,227,237,0.9)' } }, y: { display: true, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(2); } }, grid: { color: 'rgba(221,227,237,0.9)' } } } }
+        scales: { x: { display: true, ticks: { color: '#64748b', maxTicksLimit: 6, maxRotation: 0, font: { size: 11 } }, grid: { color: '#1e2235' } }, y: { display: true, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(2); } }, grid: { color: '#1e2235' } } } }
     });
     stats.innerHTML = '<div class="stat-box"><div class="label">Current</div><div class="value">' + curVal.toFixed(4) + '</div></div><div class="stat-box"><div class="label">Min</div><div class="value">' + minVal.toFixed(4) + '</div></div><div class="stat-box"><div class="label">Max</div><div class="value">' + maxVal.toFixed(4) + '</div></div><div class="stat-box"><div class="label">Change</div><div class="value" style="color:' + lineColor + '">' + (change >= 0 ? '+' : '') + changePct + '%</div></div>';
   } catch(e) { stats.innerHTML = '<div class="error-msg">Failed to load historical data. Please try again.</div>'; }
@@ -3247,7 +3247,7 @@ async function loadPolicyRateHistorical(days) {
       type: 'line', data: { labels: dates, datasets: [{ data: values, borderColor: '#0099ff', backgroundColor: gradient, fill: true, stepped: 'before', pointRadius: 0, pointHitRadius: 10, borderWidth: 2.5 }] },
       options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' },
         plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(26,32,53,0.92)', titleColor: '#f0f4f8', bodyColor: '#e2e8f0', borderColor: '#3b4a6b', borderWidth: 1, padding: 10, displayColors: false, callbacks: { label: function(c) { return 'Policy Rate: ' + c.parsed.y.toFixed(2) + '%'; } } } },
-        scales: { x: { display: true, ticks: { color: '#64748b', maxTicksLimit: 6, maxRotation: 0, font: { size: 11 } }, grid: { color: 'rgba(221,227,237,0.9)' } }, y: { display: true, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(2) + '%'; } }, grid: { color: 'rgba(221,227,237,0.9)' } } } }
+        scales: { x: { display: true, ticks: { color: '#64748b', maxTicksLimit: 6, maxRotation: 0, font: { size: 11 } }, grid: { color: '#1e2235' } }, y: { display: true, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(2) + '%'; } }, grid: { color: '#1e2235' } } } }
     });
     var changeBps = (change * 100).toFixed(0);
     stats.innerHTML = '<div class="stat-box"><div class="label">Current</div><div class="value">' + curVal.toFixed(2) + '%</div></div><div class="stat-box"><div class="label">Min</div><div class="value">' + minVal.toFixed(2) + '%</div></div><div class="stat-box"><div class="label">Max</div><div class="value">' + maxVal.toFixed(2) + '%</div></div><div class="stat-box"><div class="label">Change</div><div class="value" style="color:' + lineColor + '">' + (change >= 0 ? '+' : '') + changeBps + ' bps</div></div>';
@@ -3362,7 +3362,7 @@ async function loadInterest() {
       type: 'line', data: { labels: tenorLabels, datasets: [{ data: yieldValues, borderColor: '#0099ff', backgroundColor: grad, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#0099ff', pointBorderColor: '#0a0f1a', pointBorderWidth: 2, borderWidth: 2.5 }] },
       options: { responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(26,32,53,0.92)', titleColor: '#f0f4f8', bodyColor: '#e2e8f0', borderColor: '#3b4a6b', borderWidth: 1, padding: 10, displayColors: false, callbacks: { label: function(c) { return c.parsed.y.toFixed(3) + '%'; } } } },
-        scales: { x: { ticks: { color: '#64748b', font: { size: 12, weight: '600' } }, grid: { color: 'rgba(221,227,237,0.9)' } }, y: { ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(2) + '%'; } }, grid: { color: 'rgba(221,227,237,0.9)' } } } }
+        scales: { x: { ticks: { color: '#64748b', font: { size: 12, weight: '600' } }, grid: { color: '#1e2235' } }, y: { ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v.toFixed(2) + '%'; } }, grid: { color: '#1e2235' } } } }
     });
     loadPolicyPressRelease();
     cbHistCache = null;
@@ -3418,8 +3418,8 @@ function makeInflationChart(id, labels, values, color, bgColor) {
     options: { responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(26,32,53,0.92)', titleColor: '#f0f4f8', bodyColor: '#e2e8f0', borderColor: '#3b4a6b', borderWidth: 1, padding: 10, displayColors: false, callbacks: { label: function(c) { return (c.parsed.y != null ? c.parsed.y.toFixed(1) : '\u2014') + '%'; } } } },
       scales: {
-        x: { ticks: { color: '#64748b', maxTicksLimit: 7, maxRotation: 0, font: { size: 11 } }, grid: { color: 'rgba(221,227,237,0.9)' } },
-        y: { suggestedMin: 0, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(221,227,237,0.9)' } }
+        x: { ticks: { color: '#64748b', maxTicksLimit: 7, maxRotation: 0, font: { size: 11 } }, grid: { color: '#1e2235' } },
+        y: { suggestedMin: 0, ticks: { color: '#64748b', font: { size: 11 }, callback: function(v) { return v + '%'; } }, grid: { color: '#1e2235' } }
       }
     }
   });
