@@ -2269,11 +2269,15 @@ async function fetchEntsogPoints() {
     const data = await resp.json();
     const dirs = data.operatorpointdirections || [];
 
-    // Norway: Gassco is the only Norwegian TSO adjacent to EU grids
+    // Norway: match well-known Norwegian export terminal labels (Emden EPT/NPT, Dornum, Zeebrugge ZPT, Dunkerque DPT)
+    // Also try adjacentSystemsOperatorLabel matching Gassco as fallback
+    const NO_LABELS = ['EPT1','EPT2',' NPT','ZPT','DPT','Dornum','Norpipe','Zeepipe','Franpipe','Europipe','Kårstø','Kollsnes'];
     entsogPointCache.NO = [...new Set(
         dirs.filter(d =>
-            d.directionKey === 'entry' &&
-            (d.adjacentSystemsOperatorLabel || '').toLowerCase().includes('gassco')
+            d.directionKey === 'entry' && (
+                NO_LABELS.some(n => (d.pointLabel || '').includes(n)) ||
+                (d.adjacentSystemsOperatorLabel || '').toLowerCase().includes('gassco')
+            )
         ).map(d => d.pointKey)
     )];
 
