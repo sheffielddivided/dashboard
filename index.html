@@ -59,12 +59,12 @@
   <!-- ── EIA CSS ── -->
   <style>
     #sec-eia body { display: contents; }
-    #sec-eia header { background: #1a1d27; border-bottom: 1px solid #2d3148; padding: 0.7rem 2rem; display: flex; align-items: center; gap: 0.7rem; }
-    #sec-eia .site-title { font-size: .95rem; font-weight: 600; color: #f1f5f9; }
-    #sec-eia .view-nav { background: #1a1d27; border-bottom: 1px solid #2d3148; padding: 0 2rem; display: flex; }
-    #sec-eia .view-nav button { background: none; border: none; border-bottom: 2px solid transparent; color: #64748b; padding: 0.7rem 1.25rem; font-size: .875rem; cursor: pointer; transition: color .15s, border-color .15s; margin-bottom: -1px; }
-    #sec-eia .view-nav button:hover { color: #cbd5e1; }
-    #sec-eia .view-nav button.active { color: #f1f5f9; border-bottom-color: #4f6ef7; font-weight: 600; }
+    .view-nav { background: #1a1d27; border-bottom: 1px solid #2d3148; padding: 0 2rem; display: flex; align-items: center; }
+    .view-nav button { background: none; border: none; border-bottom: 2px solid transparent; color: #64748b; padding: 0.7rem 1.25rem; font-size: .875rem; cursor: pointer; transition: color .15s, border-color .15s; margin-bottom: -1px; font-family: inherit; }
+    .view-nav button:hover { color: #cbd5e1; }
+    .view-nav button.active { color: #f1f5f9; border-bottom-color: #4f6ef7; font-weight: 600; }
+    #sec-eugas main, #sec-nb #nbMain { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    #sec-nb #nbMain .view { padding: 0; }
     #sec-eia main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
     #sec-eia .controls { display: flex; flex-wrap: wrap; gap: .65rem; margin-bottom: 2rem; align-items: center; }
     #sec-eia .controls label { font-size: .82rem; color: #94a3b8; white-space: nowrap; }
@@ -288,22 +288,6 @@
       color: var(--text);
       min-height: 100dvh;
     }
-
-    /* ── Header ── */
-    #sec-nve header {
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-      padding: .7rem 2rem;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-    }
-    #sec-nve .header-inner { display: flex; align-items: center; gap: 10px; }
-    #sec-nve header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
-    #sec-nve header p  { font-size: .72rem; color: var(--sub); margin-top: 2px; }
 
     /* ── Region tabs ── */
     #sec-nve .tabs-bar {
@@ -582,20 +566,6 @@
 
 <!-- ═══════════════════ EIA SECTION ═══════════════════ -->
 <section id="sec-eia" class="dash-section active">
-  <header>
-    <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="width:26px;height:26px;flex-shrink:0">
-      <rect x="7" y="9" width="26" height="22" rx="4" fill="#1e3a8a"/>
-      <ellipse cx="20" cy="9" rx="13" ry="4.5" fill="#3b5bdb"/>
-      <ellipse cx="20" cy="31" rx="13" ry="4.5" fill="#3b5bdb"/>
-      <rect x="7" y="9" width="26" height="22" rx="4" fill="url(#eia-bg)"/>
-      <line x1="7" y1="16.5" x2="33" y2="16.5" stroke="#60a5fa" stroke-width="1.8" opacity="0.7"/>
-      <line x1="7" y1="23.5" x2="33" y2="23.5" stroke="#60a5fa" stroke-width="1.8" opacity="0.7"/>
-      <defs><linearGradient id="eia-bg" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#1e3a8a"/><stop offset="50%" stop-color="#2d4fc4"/><stop offset="100%" stop-color="#1e3a8a"/>
-      </linearGradient></defs>
-    </svg>
-    <span class="site-title">U.S. Energy Data from EIA</span>
-  </header>
   <nav class="view-nav">
     <button id="tabCrude"    class="active" onclick="setView('crude')">Crude</button>
     <button id="tabProducts"               onclick="setView('products')">Products</button>
@@ -704,76 +674,79 @@
 
 <!-- ═══════════════════ EUGAS SECTION ═══════════════════ -->
 <section id="sec-eugas" class="dash-section">
-  <header style="margin-bottom:1.5rem">
-    <h1 style="font-size:1.4rem;font-weight:600;margin-bottom:.2rem">Europeisk gasslager</h1>
-    <p style="font-size:.8rem;color:var(--muted)">Fyllingsgrad i % av kapasitet &mdash; data fra AGSI+ / Gas Infrastructure Europe</p>
-  </header>
-  <div class="controls" id="controls">
-    <button class="btn active" data-key="eu">Europa (total)</button>
-    <button class="btn" data-key="de">Tyskland</button>
-    <button class="btn" data-key="it">Italia</button>
-    <button class="btn" data-key="nl">Nederland</button>
-    <button class="btn" data-key="fr">Frankrike</button>
-  </div>
-  <div class="card">
-    <div class="chart-wrapper">
-      <canvas id="myChart"></canvas>
-      <div class="loading-overlay" id="loading"><div class="spinner"></div>Laster data&hellip;</div>
+  <nav class="view-nav" id="eugasNav">
+    <button id="eugasTabStorage" class="active" onclick="eugasSetView('storage')">Gasslager</button>
+    <button id="eugasTabLng"                    onclick="eugasSetView('lng')">LNG Import</button>
+    <button id="eugasTabSupply"                 onclick="eugasSetView('supply')">Lagerflyt</button>
+    <button id="eugasTabUmm"                    onclick="eugasSetView('umm')">UMM</button>
+  </nav>
+  <main id="eugasMain">
+    <div id="eugasViewStorage">
+      <div class="controls" id="controls">
+        <button class="btn active" data-key="eu">Europa (total)</button>
+        <button class="btn" data-key="de">Tyskland</button>
+        <button class="btn" data-key="it">Italia</button>
+        <button class="btn" data-key="nl">Nederland</button>
+        <button class="btn" data-key="fr">Frankrike</button>
+      </div>
+      <div class="card">
+        <div class="chart-wrapper">
+          <canvas id="myChart"></canvas>
+          <div class="loading-overlay" id="loading"><div class="spinner"></div>Laster data&hellip;</div>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
     </div>
-    <div class="error-box" id="errorBox"></div>
-    <div class="stats-grid" id="statsGrid"></div>
-  </div>
-  <h2 class="section-heading">LNG import &ndash; send-out (regassifisering)<span>14-dagers glidende snitt &middot; GWh/dag</span></h2>
-  <div class="controls" id="lng-controls">
-    <button class="btn active" data-key="eu">Europa (total)</button>
-    <button class="btn" data-key="es">Spania</button>
-    <button class="btn" data-key="fr">Frankrike</button>
-    <button class="btn" data-key="it">Italia</button>
-    <button class="btn" data-key="nl">Nederland</button>
-  </div>
-  <div class="card">
-    <div class="chart-wrapper">
-      <canvas id="lngChart"></canvas>
-      <div class="loading-overlay" id="lngLoading"><div class="spinner"></div>Laster data&hellip;</div>
+    <div id="eugasViewLng" style="display:none">
+      <div class="controls" id="lng-controls">
+        <button class="btn active" data-key="eu">Europa (total)</button>
+        <button class="btn" data-key="es">Spania</button>
+        <button class="btn" data-key="fr">Frankrike</button>
+        <button class="btn" data-key="it">Italia</button>
+        <button class="btn" data-key="nl">Nederland</button>
+      </div>
+      <div class="card">
+        <div class="chart-wrapper">
+          <canvas id="lngChart"></canvas>
+          <div class="loading-overlay" id="lngLoading"><div class="spinner"></div>Laster data&hellip;</div>
+        </div>
+        <div class="error-box" id="lngErrorBox"></div>
+        <div class="stats-grid" id="lngStatsGrid"></div>
+      </div>
     </div>
-    <div class="error-box" id="lngErrorBox"></div>
-    <div class="stats-grid" id="lngStatsGrid"></div>
-  </div>
-  <h2 class="section-heading">Gaslagerflyt og LNG-import &ndash; EU total<span>Lagerinjeksjon, lagertrekk og LNG &middot; 14-dagers glidende snitt &middot; GWh/dag &middot; Stiplet = 5-&aring;rssnitt</span></h2>
-  <div class="card">
-    <div class="chart-wrapper">
-      <canvas id="supplyChart"></canvas>
-      <div class="loading-overlay" id="supplyLoading"><div class="spinner"></div>Laster data&hellip;</div>
+    <div id="eugasViewSupply" style="display:none">
+      <div class="card">
+        <h2 style="font-size:.85rem;color:#8b949e;margin-bottom:1rem">Lagerinjeksjon, lagertrekk og LNG &middot; 14-dagers glidende snitt &middot; GWh/dag</h2>
+        <div class="chart-wrapper">
+          <canvas id="supplyChart"></canvas>
+          <div class="loading-overlay" id="supplyLoading"><div class="spinner"></div>Laster data&hellip;</div>
+        </div>
+        <div class="error-box" id="supplyErrorBox"></div>
+        <div class="stats-grid" id="supplyStatsGrid"></div>
+      </div>
     </div>
-    <div class="error-box" id="supplyErrorBox"></div>
-    <div class="stats-grid" id="supplyStatsGrid"></div>
-  </div>
-  <h2 class="section-heading">Aktive kapasitetsvarsler (UMM)<span>Driftsavbrudd og kapasitetsreduksjoner &middot; kilde: IIP+ (GIE)</span></h2>
-  <div class="card">
-    <div id="ummLoading" style="padding:1.5rem 0;display:flex;align-items:center;justify-content:center;gap:.6rem;color:var(--muted);font-size:.85rem">
-      <div class="spinner"></div>Laster varsler&hellip;
+    <div id="eugasViewUmm" style="display:none">
+      <div class="card">
+        <h2 style="font-size:.85rem;color:#8b949e;margin-bottom:1rem">Driftsavbrudd og kapasitetsreduksjoner &middot; kilde: IIP+ (GIE)</h2>
+        <div id="ummLoading" style="padding:1.5rem 0;display:flex;align-items:center;justify-content:center;gap:.6rem;color:var(--muted);font-size:.85rem">
+          <div class="spinner"></div>Laster varsler&hellip;
+        </div>
+        <div class="error-box" id="ummErrorBox"></div>
+        <div class="stats-grid" id="ummStatsGrid"></div>
+        <div id="ummContent"></div>
+      </div>
     </div>
-    <div class="error-box" id="ummErrorBox"></div>
-    <div class="stats-grid" id="ummStatsGrid"></div>
-    <div id="ummContent"></div>
-  </div>
-  <footer style="margin-top:1.25rem;font-size:.72rem;color:var(--muted)">
-    Kilde: <a href="https://agsi.gie.eu" target="_blank" rel="noopener">AGSI+</a>,
-    <a href="https://alsi.gie.eu" target="_blank" rel="noopener">ALSI+</a> og
-    <a href="https://iip.gie.eu" target="_blank" rel="noopener">IIP+</a> / Gas Infrastructure Europe.
+  </main>
+  <footer style="text-align:center;padding:1.5rem 2rem;color:#475569;font-size:.72rem;border-top:1px solid #1e2235;margin-top:.5rem">
+    Kilde: <a href="https://agsi.gie.eu" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none">AGSI+</a>,
+    <a href="https://alsi.gie.eu" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none">ALSI+</a> og
+    <a href="https://iip.gie.eu" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none">IIP+</a> / Gas Infrastructure Europe.
   </footer>
 </section>
 
 <!-- ═══════════════════ NVE SECTION ═══════════════════ -->
 <section id="sec-nve" class="dash-section">
-  <header>
-    <div class="header-inner">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/>
-      </svg>
-      <div><h1>Magasinstatistikk</h1><p id="hdr-sub">Laster data&hellip;</p></div>
-    </div>
-  </header>
   <div class="tabs-bar" id="tabs-bar"></div>
   <div class="page">
     <div id="main-content">
@@ -788,16 +761,14 @@
 
 <!-- ═══════════════════ NB SECTION ═══════════════════ -->
 <section id="sec-nb" class="dash-section">
-  <div class="header" style="position:relative">
-    <h1>&#x1F1F3;&#x1F1F4; Norges Bank</h1>
-    <div class="subtitle">Exchange Rates, Interest Rates &amp; Inflation</div>
-    <button class="reload-btn" id="reloadBtn" onclick="reloadPage()" title="Reload">&#x21BB;</button>
-    <div class="tab-bar">
-      <button class="active" onclick="switchTab('currency')"><span class="icon">&#x1F4B1;</span>Currency</button>
-      <button onclick="switchTab('interest')"><span class="icon">&#x1F4C8;</span>Interest</button>
-      <button onclick="switchTab('inflation')"><span class="icon">&#x1F4CA;</span>Inflation</button>
-    </div>
-  </div>
+  <nav class="view-nav" id="nbNav">
+    <button id="nbTabCurrency" class="active" onclick="switchTab('currency')">Valuta</button>
+    <button id="nbTabInterest"               onclick="switchTab('interest')">Renter</button>
+    <button id="nbTabInflation"              onclick="switchTab('inflation')">Inflasjon</button>
+    <span style="flex:1"></span>
+    <button class="reload-btn" id="reloadBtn" onclick="reloadPage()" title="Reload" style="position:static;margin:auto 0">&#x21BB;</button>
+  </nav>
+  <div id="nbMain">
   <div id="currencyView" class="view active">
     <div style="display:flex;align-items:center;margin-bottom:14px">
       <div class="date-label" id="rateDate">Loading rates&hellip;</div>
@@ -817,6 +788,7 @@
       <div class="loading"><div class="spinner"></div><span>Fetching inflation data&hellip;</span></div>
     </div>
   </div>
+  </div><!-- /nbMain -->
 </section>
 
 <!-- NB modal at body level (position:fixed needs to be outside sections) -->
@@ -861,6 +833,33 @@ function showSection(name) {
     if (name === 'nve') nveInit();
     if (name === 'nb') loadCurrencies();
   }
+}
+
+// ── EUGAS view switcher ──────────────────────────────────────────────────────
+const _eugasInited = {};
+function eugasSetView(name) {
+  ['storage','lng','supply','umm'].forEach(function(v) {
+    document.getElementById('eugasView' + v.charAt(0).toUpperCase() + v.slice(1)).style.display = v === name ? '' : 'none';
+    var btn = document.getElementById('eugasTab' + v.charAt(0).toUpperCase() + v.slice(1));
+    if (btn) btn.classList.toggle('active', v === name);
+  });
+  if (!_eugasInited[name]) {
+    _eugasInited[name] = true;
+    if (name === 'lng') loadAndRenderLng('eu');
+    if (name === 'supply') loadAndRenderSupply();
+    if (name === 'umm') loadAndRenderUmm();
+  }
+}
+
+// ── NB view switcher (replaces tab-bar based switchTab) ──────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('#sec-nb .view').forEach(function(v) { v.classList.remove('active'); });
+  document.querySelectorAll('#nbNav button[id^="nbTab"]').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById(tab + 'View').classList.add('active');
+  var tabMap = { currency: 'nbTabCurrency', interest: 'nbTabInterest', inflation: 'nbTabInflation' };
+  if (tabMap[tab]) document.getElementById(tabMap[tab]).classList.add('active');
+  if (tab === 'interest' && !interestLoaded) { interestLoaded = true; loadInterest(); }
+  if (tab === 'inflation' && !inflationLoaded) { inflationLoaded = true; loadInflation(); }
 }
 
 // Fix tab button active state (match by onclick attribute)
@@ -2556,8 +2555,6 @@ function renderView() {
   const deltaSign  = deltaDisplay >= 0 ? '+' : '';
   const deltaClass = deltaDisplay >= 0 ? 'up' : 'down';
 
-  document.getElementById('hdr-sub').textContent = `Siste: ${weekLabel(latest)}`;
-
   const histFrom = CURRENT_YEAR - NVE_HIST_YEARS;
 
   // Build chart data once — reused for both the chart and the median-diff pill
@@ -2802,7 +2799,6 @@ async function nveInit() {
     renderTabs();
     renderView();
   } catch (err) {
-    document.getElementById('hdr-sub').textContent = 'Feil ved lasting';
     document.getElementById('main-content').innerHTML = `
       <div class="error-box">
         <strong>Kunne ikke laste data</strong>
@@ -2829,23 +2825,7 @@ var interestLoaded = false;
 var CF_PROXY = 'https://fancy-haze-b963.batil-kjekken.workers.dev/?url=';
 var inflationLoaded = false;
 
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('#sec-nb .view').forEach(function(v) { v.classList.remove('active'); });
-  document.querySelectorAll('#sec-nb .tab-bar button').forEach(function(b) { b.classList.remove('active'); });
-  if (tab === 'currency') {
-    document.getElementById('currencyView').classList.add('active');
-    document.querySelectorAll('#sec-nb .tab-bar button')[0].classList.add('active');
-  } else if (tab === 'interest') {
-    document.getElementById('interestView').classList.add('active');
-    document.querySelectorAll('#sec-nb .tab-bar button')[1].classList.add('active');
-    if (!interestLoaded) { loadInterest(); interestLoaded = true; }
-  } else {
-    document.getElementById('inflationView').classList.add('active');
-    document.querySelectorAll('#sec-nb .tab-bar button')[2].classList.add('active');
-    if (!inflationLoaded) { loadInflation(); inflationLoaded = true; }
-  }
-}
+// switchTab is defined in dashboard bootstrap above
 
 var PRIORITY = ['USD','EUR','GBP','SEK','DKK','CHF'];
 var ALPHA = ['AUD','BRL','CAD','CZK','JPY','PLN','KRW','TRY'];
