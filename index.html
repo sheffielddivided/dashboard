@@ -2016,8 +2016,16 @@ async function loadAndRenderSupply() {
         const todayKey = String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
         const todayIdx = DAY_KEYS.indexOf(todayKey);
 
-        renderSupplyChart(wdSmooth, injSmooth, lngSmooth, wdAvgSmooth, injAvgSmooth, lngAvgSmooth, todayIdx);
-        renderSupplyStats(wdSmooth, injSmooth, lngSmooth, wdAvgSmooth, injAvgSmooth, lngAvgSmooth);
+        // Fetch Norwegian and Russian pipeline supply (ENTSOG) — non-blocking
+        const [noRaw, ruRaw] = await Promise.all([
+            fetchEntsogSupply('NO', CUR_YEAR).catch(() => ({})),
+            fetchEntsogSupply('RU', CUR_YEAR).catch(() => ({})),
+        ]);
+        const noSmooth = rollingAvg(DAY_KEYS.map(k => noRaw[k] ?? null));
+        const ruSmooth = rollingAvg(DAY_KEYS.map(k => ruRaw[k] ?? null));
+
+        renderSupplyChart(wdSmooth, injSmooth, lngSmooth, wdAvgSmooth, injAvgSmooth, lngAvgSmooth, todayIdx, noSmooth, ruSmooth);
+        renderSupplyStats(wdSmooth, injSmooth, lngSmooth, wdAvgSmooth, injAvgSmooth, lngAvgSmooth, noSmooth, ruSmooth);
     } catch (err) {
         errorEl.textContent = `Feil: ${err.message}`;
         errorEl.style.display = 'block';
@@ -2027,7 +2035,7 @@ async function loadAndRenderSupply() {
     }
 }
 
-function renderSupplyChart(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg, todayIdx) {
+function renderSupplyChart(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg, todayIdx, noCur, ruCur) {
     const ctx = document.getElementById('supplyChart').getContext('2d');
     if (supplyChartInstance) supplyChartInstance.destroy();
 
@@ -2116,6 +2124,30 @@ function renderSupplyChart(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg, todayId
                     spanGaps: true,
                     order: 3,
                 },
+                ...(noCur && noCur.some(v => v != null) ? [{
+                    label: `🇳🇴 Norge ${CUR_YEAR}`,
+                    data: noCur,
+                    borderColor: '#60a5fa',
+                    backgroundColor: 'transparent',
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    spanGaps: true,
+                    order: 1,
+                }] : []),
+                ...(ruCur && ruCur.some(v => v != null) ? [{
+                    label: `🇷🇺 Russland ${CUR_YEAR}`,
+                    data: ruCur,
+                    borderColor: '#f85149',
+                    backgroundColor: 'transparent',
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    spanGaps: true,
+                    order: 1,
+                }] : []),
             ],
         },
         options: {
@@ -2187,7 +2219,7 @@ function renderSupplyChart(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg, todayId
     });
 }
 
-function renderSupplyStats(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg) {
+function renderSupplyStats(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg, noCur, ruCur) {
     let latestIdx = -1;
     for (let i = wdCur.length - 1; i >= 0; i--) {
         if (wdCur[i] != null || injCur[i] != null || lngCur[i] != null) { latestIdx = i; break; }
@@ -2198,8 +2230,25 @@ function renderSupplyStats(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg) {
     const wdAvgV = wdAvg[latestIdx],  injAvgV = injAvg[latestIdx],  lngAvgV = lngAvg[latestIdx];
     const dateStr = DAY_KEYS[latestIdx];
 
+    // Latest non-null for ENTSOG (may lag behind AGSI)
+    const latestNo = noCur ? [...noCur].reverse().find(v => v != null) : null;
+    const latestRu = ruCur ? [...ruCur].reverse().find(v => v != null) : null;
+
     const fmt = (v, color) =>
         `<div class="stat-value" style="color:${color}">${v != null ? Math.round(v) : '—'} <small style="font-size:.8rem;font-weight:400">GWh/d</small></div>`;
+
+    const entsogStats = `
+        ${latestNo != null ? `<div class="stat">
+            <div class="stat-label">🇳🇴 Norsk gass (siste)</div>
+            ${fmt(latestNo, '#60a5fa')}
+            <div class="stat-sub">Rørledning via ENTSOG</div>
+        </div>` : ''}
+        ${latestRu != null ? `<div class="stat">
+            <div class="stat-label">🇷🇺 Russisk gass (siste)</div>
+            ${fmt(latestRu, '#f85149')}
+            <div class="stat-sub">Rørledning via ENTSOG</div>
+        </div>` : ''}
+    `;
 
     document.getElementById('supplyStatsGrid').innerHTML = `
         <div class="stat">
@@ -2217,11 +2266,91 @@ function renderSupplyStats(wdCur, injCur, lngCur, wdAvg, injAvg, lngAvg) {
             ${fmt(lngVal, '#e6b317')}
             <div class="stat-sub">5-årssnitt: ${lngAvgV != null ? Math.round(lngAvgV) : '—'} GWh/d</div>
         </div>
+        ${entsogStats}
     `;
 }
 
 
-// ── UMM alerts: active capacity curtailments from IIP+ ───────────────────────
+// ── ENTSOG pipeline supply (Norway + Russia) ─────────────────────────────────
+const entsogPointCache = {};
+const entsogFlowCache  = {};
+
+async function fetchEntsogPoints() {
+    if (entsogPointCache._loaded) return entsogPointCache;
+    const resp = await fetch(
+        'https://transparency.entsog.eu/api/v1/operatorpointdirections?format=json&limit=2000&isInterconnection=Y'
+    );
+    const data = await resp.json();
+    const dirs = data.operatorpointdirections || [];
+
+    // Norway: Gassco is the only Norwegian TSO adjacent to EU grids
+    entsogPointCache.NO = [...new Set(
+        dirs.filter(d =>
+            d.directionKey === 'entry' &&
+            (d.adjacentSystemsOperatorLabel || '').toLowerCase().includes('gassco')
+        ).map(d => d.pointKey)
+    )];
+
+    // Russia: hardcode well-known historical entry points
+    const RU_LABELS = ['Greifswald','Mallnow','Velke Kapusany','Baumgarten','Mosonmagyarovar','Bereg','Sudzha','Imatra'];
+    entsogPointCache.RU = [...new Set(
+        dirs.filter(d =>
+            d.directionKey === 'entry' && (
+                RU_LABELS.some(n => (d.pointLabel || '').includes(n)) ||
+                (d.adjacentSystemsOperatorLabel || '').toLowerCase().includes('gazprom')
+            )
+        ).map(d => d.pointKey)
+    )];
+
+    entsogPointCache._loaded = true;
+    return entsogPointCache;
+}
+
+async function fetchEntsogSupply(countryCode, year) {
+    const cacheKey = `${countryCode}_${year}`;
+    if (entsogFlowCache[cacheKey]) return entsogFlowCache[cacheKey];
+
+    const pts = await fetchEntsogPoints();
+    const keys = pts[countryCode] || [];
+    if (!keys.length) { entsogFlowCache[cacheKey] = {}; return {}; }
+
+    const from = `${year}-01-01`;
+    const to   = year === CUR_YEAR ? new Date().toISOString().slice(0, 10) : `${year}-12-31`;
+
+    // Chunk into batches of 20 to avoid oversized URLs
+    const allItems = [];
+    for (let i = 0; i < keys.length; i += 20) {
+        const chunk = keys.slice(i, i + 20);
+        const pk = chunk.map(k => `pointKey[]=${encodeURIComponent(k)}`).join('&');
+        const url = `https://transparency.entsog.eu/api/v1/aggregatedData?indicator=Physical%20Flow` +
+                    `&periodType=day&from=${from}&to=${to}&limit=5000&format=json&${pk}`;
+        const r = await fetch(url);
+        const d = await r.json();
+        allItems.push(...(d.aggregatedData || []));
+    }
+
+    // Aggregate by MM-DD; ENTSOG daily values are in kWh/h → × 24 / 1e6 = GWh/day
+    const result = {};
+    for (const item of allItems) {
+        const val = parseFloat(item.value);
+        if (!val || val < 0) continue;
+        const date = (item.periodFrom || '').slice(0, 10);
+        if (!date) continue;
+        const mmdd = date.slice(5);
+        const unit = (item.unit || '').toLowerCase();
+        let gwh;
+        if (unit.includes('kwh/h') || unit === '' || unit === 'kwh') gwh = val * 24 / 1e6;
+        else if (unit.includes('mwh')) gwh = val / 1e3;
+        else if (unit.includes('gwh')) gwh = val;
+        else gwh = val * 24 / 1e6; // assume kWh/h as fallback
+        result[mmdd] = (result[mmdd] || 0) + gwh;
+    }
+
+    entsogFlowCache[cacheKey] = result;
+    return result;
+}
+
+
 // IIP doesn't send CORS headers so it can't be called from a browser directly.
 // A GitHub Actions workflow (update-umm.yml) fetches server-side every hour
 // and writes data/umm.json into this repo. The page reads same-origin JSON.
