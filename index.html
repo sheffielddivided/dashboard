@@ -25,15 +25,7 @@
       top: 0;
       z-index: 200;
     }
-    .dash-logo {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #f0f6fc;
-      padding: 0.6rem 0.75rem 0.6rem 0;
-      white-space: nowrap;
-      border-right: 1px solid #30363d;
-      margin-right: 0.5rem;
-    }
+    .dash-logo { display: none; }
     .dash-tab {
       background: none;
       border: none;
@@ -98,15 +90,8 @@
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      padding: 2rem 1.5rem;
-      max-width: 1200px;
-      margin: 0 auto;
     }
-
-    #sec-eugas header { margin-bottom: 1.5rem; }
-    #sec-eugas h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.2rem; color: var(--text); }
-    #sec-eugas .subtitle { font-size: 0.8rem; color: var(--muted); }
+    #sec-eugas main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
 
     #sec-eugas .controls {
       display: flex;
@@ -116,24 +101,23 @@
       align-items: center;
     }
     #sec-eugas .btn {
+      background: #1e2235;
+      border: none;
+      color: #64748b;
       padding: .4rem .95rem;
       font-size: .8rem;
       font-family: inherit;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: #1e2235;
-      color: var(--muted);
       cursor: pointer;
-      transition: background .15s, color .15s, border-color .15s;
+      transition: background .15s, color .15s;
       white-space: nowrap;
+      border-right: 1px solid #2d3148;
     }
-    #sec-eugas .btn:hover { color: #cbd5e1; border-color: var(--accent); }
-    #sec-eugas .btn.active {
-      background: var(--accent2);
-      border-color: var(--accent2);
-      color: #fff;
-      font-weight: 600;
-    }
+    #sec-eugas .controls > .btn:first-child { border-radius: 6px 0 0 6px; }
+    #sec-eugas .controls > .btn:last-child  { border-radius: 0 6px 6px 0; border-right: none; }
+    #sec-eugas .controls > .btn:only-child  { border-radius: 6px; border-right: none; }
+    #sec-eugas .btn:hover { color: #cbd5e1; }
+    #sec-eugas .btn.active { background: #3b5bdb; color: #fff; font-weight: 600; }
+    #sec-eugas .controls { border: 1px solid #2d3148; border-radius: 6px; overflow: hidden; width: fit-content; }
 
     #sec-eugas .card {
       background: var(--surface);
@@ -147,7 +131,7 @@
       height: 360px;
     }
     @media (max-width: 600px) {
-      #sec-eugas { padding: 1rem; }
+      #sec-eugas main { padding: 1rem; }
       #sec-eugas .chart-wrapper { height: 260px; }
     }
 
